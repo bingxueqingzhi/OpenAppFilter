@@ -1,4 +1,3 @@
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <net/tcp.h>
@@ -12,6 +11,7 @@
 #include <linux/cdev.h>
 #include <linux/vmalloc.h>
 #include <linux/device.h>
+#include <linux/version.h>
 #include "cJSON.h"
 #include "app_filter.h"
 #include "af_utils.h"
@@ -154,8 +154,7 @@ int hash_mac(unsigned char *mac)
 {
 	if (!mac)
 		return 0;
-	else
-		return mac[5] & (MAX_AF_MAC_HASH_SIZE - 1);
+	return ((mac[0] ^ mac[1]) + (mac[2] ^ mac[3]) + (mac[4] ^ mac[5])) % MAX_AF_MAC_HASH_SIZE;
 }
 
 af_mac_info_t *find_af_mac(unsigned char *mac)
@@ -419,7 +418,11 @@ int af_register_dev(void)
 		goto REGION_OUT;
 	}
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 4, 0)
 	g_af_dev.c = class_create(THIS_MODULE, AF_DEV_NAME);
+#else
+    g_af_dev.c = class_create(AF_DEV_NAME);
+#endif
 	if (IS_ERR_OR_NULL(g_af_dev.c))
 	{
 		goto CDEV_OUT;
